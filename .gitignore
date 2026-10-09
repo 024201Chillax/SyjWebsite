@@ -1,0 +1,29 @@
+.next/
+node_modules/
+.vercel/
+coverage/
+*.tsbuildinfo
+.env*
+!.env.example
+
+# Local generated material and caches (keep originals on disk)
+.pnpm-store/
+.tmp/
+tmp/
+tmp_*/
+outputs/
+*.log
+*.blend
+*.blend1
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Original oversized video; the site uses motion-web.mp4
+/public/playground/maxxxine/motion.mp4
+
+# Root-level preview exports; published assets live in public/
+/hero-0*.png
+/tmp_portfolio_contact.jpg
