@@ -15,6 +15,7 @@ export default function DitherField(){
   const coarsePointer=window.matchMedia('(pointer: coarse)').matches;
   let animation=0;
   let previousFrame=0;
+  let visible=false;
   let width=1;
   let height=1;
   let pointerX=.5;
@@ -55,7 +56,7 @@ export default function DitherField(){
 
   const resize=()=>{
    const bounds=canvas.getBoundingClientRect();
-   const ratio=Math.min(window.devicePixelRatio||1,coarsePointer?1:1.4);
+   const ratio=Math.min(window.devicePixelRatio||1,coarsePointer?1:1.25);
    width=Math.max(1,Math.round(bounds.width*ratio));
    height=Math.max(1,Math.round(bounds.height*ratio));
    canvas.width=width;
@@ -71,6 +72,7 @@ export default function DitherField(){
   };
 
   const frame=(timestamp:number)=>{
+   if(!visible||document.hidden){animation=0;return}
    const interval=coarsePointer?1000/24:1000/40;
    if(timestamp-previousFrame>=interval){previousFrame=timestamp;render(timestamp)}
    if(!reducedMotion.matches)animation=requestAnimationFrame(frame);
@@ -82,22 +84,30 @@ export default function DitherField(){
   };
   const onMotionChange=()=>{
    cancelAnimationFrame(animation);
+   animation=0;
    render(0);
-   if(!reducedMotion.matches)animation=requestAnimationFrame(frame);
+   if(visible&&!document.hidden&&!reducedMotion.matches)animation=requestAnimationFrame(frame);
   };
+  const observer=new IntersectionObserver(entries=>{
+   visible=entries[0]?.isIntersecting??false;
+   onMotionChange();
+  });
+  observer.observe(canvas);
 
   resize();
   render(0);
   canvas.addEventListener('pointermove',onPointerMove);
   window.addEventListener('resize',resize);
   reducedMotion.addEventListener('change',onMotionChange);
-  if(!reducedMotion.matches)animation=requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange',onMotionChange);
 
   return()=>{
    cancelAnimationFrame(animation);
    canvas.removeEventListener('pointermove',onPointerMove);
    window.removeEventListener('resize',resize);
    reducedMotion.removeEventListener('change',onMotionChange);
+   document.removeEventListener('visibilitychange',onMotionChange);
+   observer.disconnect();
    gl.deleteBuffer(buffer);
    gl.deleteProgram(program);
    gl.deleteShader(vertex);

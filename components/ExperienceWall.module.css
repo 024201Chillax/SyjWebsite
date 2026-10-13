@@ -1,0 +1,7 @@
+.wall{contain:layout style}
+@media(max-width:767px),(pointer:coarse),(prefers-reduced-motion:reduce){
+ .wall :global(.experienceWallWindow){overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;touch-action:pan-x pan-y}
+ .wall :global(.experienceWallTrack){transform:none!important;will-change:auto}
+ .wall :global(.experienceWallSet[aria-hidden="true"]){display:none}
+ .wall :global(.experienceCard){width:min(80vw,27rem);max-width:calc(100vw - var(--gutter)*2);scroll-snap-align:start;transform:none!important}
+}

@@ -38,11 +38,8 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
  const progressLabelRef=useRef<HTMLSpanElement>(null);
  const sequenceCanvasRef=useRef<HTMLCanvasElement>(null);
  const renderedModelRef=useRef<HTMLDivElement>(null);
- const motionVideoRefs=useRef(new Map<string,HTMLVideoElement>());
  const transitionRef=useRef<HTMLDivElement>(null);
  const anchorBypassRef=useRef<{target:'work'|'playground';settled:boolean}|null>(null);
- const touchStartYRef=useRef(0);
- const touchLastYRef=useRef(0);
  const activeAssetSetRef=useRef<AssetSet>('desktop');
  const desiredFrameRef=useRef<{assetSet:AssetSet;sequence:Sequence;index:number}>({assetSet:'desktop',sequence:'selected',index:0});
  const previousDesiredFrameRef=useRef<{sequence:Sequence;index:number}>({sequence:'selected',index:0});
@@ -55,15 +52,23 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
   const updateMotion=()=>{reducedMotionRef.current=media.matches;setReduceMotion(media.matches)};
   updateMotion();media.addEventListener('change',updateMotion);
   let visible=false;
+  let disposed=false;
+  let lastDrawn='';
+  let canvasWidth=1,canvasHeight=1;
+  const measureCanvas=()=>{
+   const bounds=renderedModelRef.current?.getBoundingClientRect();
+   const dpr=Math.min(window.devicePixelRatio||1,window.innerWidth<=767?1:1.25);
+   canvasWidth=Math.max(1,Math.round((bounds?.width||window.innerWidth)*dpr));
+   canvasHeight=Math.max(1,Math.round((bounds?.height||window.innerHeight)*dpr));
+   lastDrawn='';
+  };
+  measureCanvas();
   const drawImage=(image:HTMLImageElement)=>{
    const canvas=sequenceCanvasRef.current;if(!canvas||!image.complete||!image.naturalWidth)return;
-   const bounds=canvas.getBoundingClientRect();
-   const cssWidth=bounds.width>0&&bounds.width<=window.innerWidth*1.5?bounds.width:window.innerWidth*.94;
-   const cssHeight=bounds.height>0&&bounds.height<=window.innerHeight*1.2?bounds.height:window.innerHeight*.86;
-   const sourceDpr=Math.max(1,Math.min(image.naturalWidth/Math.max(1,cssWidth),image.naturalHeight/Math.max(1,cssHeight)));
-   const dpr=Math.min(window.devicePixelRatio||1,2,sourceDpr);
-   const width=Math.max(1,Math.round(cssWidth*dpr));
-   const height=Math.max(1,Math.round(cssHeight*dpr));
+   const width=canvasWidth,height=canvasHeight;
+   const key=`${image.src}:${width}:${height}`;
+   if(key===lastDrawn)return;
+   lastDrawn=key;
    if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height}
    const context=canvas.getContext('2d',{alpha:true});if(!context)return;
    context.clearRect(0,0,width,height);
@@ -91,7 +96,7 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
     frameKey(desired.assetSet,'restricted',FRAME_COUNT-1)
    ]);
    let guard=0;
-   while(cache.size>12&&guard++<32){
+   while(cache.size>(window.innerWidth<=767?7:10)&&guard++<32){
     const oldest=cache.keys().next().value as string|undefined;
     if(!oldest)return;
     const image=cache.get(oldest);cache.delete(oldest);
@@ -104,14 +109,16 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
    const cache=frameCacheRef.current;
    const cached=cache.get(key);
    if(cached){cache.delete(key);cache.set(key,cached);return}
-   if(pendingFramesRef.current.has(key)||pendingFramesRef.current.size>=4)return;
+   if(pendingFramesRef.current.has(key)||pendingFramesRef.current.size>=(window.innerWidth<=767?2:3))return;
    pendingFramesRef.current.add(key);
    const image=new window.Image();image.decoding='async';
    image.onload=()=>{
     void image.decode().catch(()=>undefined).then(()=>{
+     if(disposed)return;
      pendingFramesRef.current.delete(key);cache.set(key,image);trimCache();
      const desired=desiredFrameRef.current;
      if(desired.assetSet===assetSet&&desired.sequence===sequence&&desired.index===safeIndex)drawImage(image);
+     else loadFrame(desired.assetSet,desired.sequence,desired.index);
     });
    };
    image.onerror=()=>pendingFramesRef.current.delete(key);
@@ -139,7 +146,7 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
    }
    loadFrame(assetSet,sequence,safeIndex);
    const forward=direction<0?-1:1;
-   for(let offset=1;offset<=3&&pendingFramesRef.current.size<4;offset+=1){
+   for(let offset=1;offset<=2&&pendingFramesRef.current.size<(window.innerWidth<=767?2:3);offset+=1){
     loadFrame(assetSet,sequence,safeIndex+offset*forward);
     if(offset===1)loadFrame(assetSet,sequence,safeIndex-offset*forward);
    }
@@ -156,17 +163,22 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
     else image.addEventListener('load',()=>void image.decode().catch(()=>undefined),{once:true});
    });
   };
-  const idleWindow=window as Window&{requestIdleCallback?:(callback:()=>void,options?:{timeout:number})=>number;cancelIdleCallback?:(id:number)=>void};
-  const warmId=idleWindow.requestIdleCallback?.(()=>{warmDestination('work');warmDestination('playground')},{timeout:1200})
-   ??window.setTimeout(()=>{warmDestination('work');warmDestination('playground')},250);
+  const destinationObserver=new IntersectionObserver(entries=>{
+   for(const entry of entries)if(entry.isIntersecting){warmDestination((entry.target as HTMLElement).id);destinationObserver.unobserve(entry.target)}
+  },{rootMargin:'160px'});
+  for(const id of ['work','playground']){const target=document.getElementById(id);if(target)destinationObserver.observe(target)}
   const commitPhase=(next:Phase)=>{if(phaseRef.current!==next){phaseRef.current=next;setPhase(next)}};
   const transitionSpanForViewport=()=>{
    const mobile=window.innerWidth<=767;
    return clamp(window.innerHeight*(mobile?.72:.9),mobile?520:680,mobile?760:980);
   };
+  let lastPanel='';
   const setPanel=(variant:TransitionVariant,state:TransitionState,progress:number,direction:1|-1)=>{
    const layer=transitionRef.current;if(!layer)return;
    const amount=clamp(progress);
+   const key=`${variant}:${state}:${amount.toFixed(3)}:${direction}`;
+   if(key===lastPanel)return;
+   lastPanel=key;
    const enter=range(amount,0,.18);
    const settle=range(amount,.18,.28);
    const exit=range(amount,.76,1);
@@ -243,7 +255,7 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
    root.style.setProperty('--intro-progress',activeSegment==='intro'?String(currentProgress):'0');
    root.style.setProperty('--return-progress',activeSegment==='return'?String(currentProgress):'0');
 
-   if((introActive||returnActive)&&!motionActive){
+   if(introActive||returnActive){
     let sequence:Sequence='selected';let sequenceFrame=0;
     if(introActive)sequenceFrame=range(currentProgress,.03,.88)*(FRAME_COUNT-1);
     else if(currentProgress<.50)sequenceFrame=0;
@@ -254,165 +266,10 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
    if(visible!==nextVisible){visible=nextVisible;setCanvasVisible(nextVisible)}
    commitPhase(nextPhase);
   };
-  type NavigationSegment={element:HTMLElement;name:Segment;progress:number};
-  let cameraMotionFrame:number|null=null;
-  let wheelAccumulator=0;
-  let wheelDirection:1|-1=1;
-  let lastWheelTime=0;
-  let gestureArmed=true;
-  let gestureRearmTimer:number|null=null;
-  let motionActive=false;
-  let previousScrollBehavior:string|null=null;
-  const navigationStops:Record<Segment,number[]>={
-   intro:[0,.82,1],
-   return:[0,.48,.86,1]
-  };
-  const rearmAfterQuiet=()=>{
-   gestureArmed=false;
-   if(gestureRearmTimer!==null)window.clearTimeout(gestureRearmTimer);
-   gestureRearmTimer=window.setTimeout(()=>{
-    gestureArmed=true;
-    wheelAccumulator=0;
-    gestureRearmTimer=null;
-   },90);
-  };
-  const activeNavigationSegment=():NavigationSegment|null=>{
-   if(anchorBypassRef.current)return null;
-   const introElement=introRef.current;
-   const returnElement=returnRef.current;
-   if(!introElement||!returnElement)return null;
-   const candidates:Array<{element:HTMLElement;name:Segment;rect:DOMRect}>= [
-    {element:introElement,name:'intro',rect:introElement.getBoundingClientRect()},
-    {element:returnElement,name:'return',rect:returnElement.getBoundingClientRect()}
-   ];
-   const edgeReach=transitionSpanForViewport()*1.08;
-   const active=candidates
-    .filter(item=>item.rect.top<=window.innerHeight*(item.name==='return' ? .72 : .18)&&item.rect.bottom>-edgeReach)
-    .sort((a,b)=>Math.abs(a.rect.top)-Math.abs(b.rect.top))[0];
-   return active?{element:active.element,name:active.name,progress:sectionProgress(active.element)}:null;
-  };
-  const nextNavigationStop=(segment:NavigationSegment,direction:1|-1)=>{
-   const epsilon=.035;
-   const stops=navigationStops[segment.name];
-   if(direction>0)return stops.find(stop=>stop>segment.progress+epsilon)??null;
-   return [...stops].reverse().find(stop=>stop<segment.progress-epsilon)??null;
-  };
-  const scrollTopForStop=(element:HTMLElement,stop:number)=>{
-   const sectionTop=window.scrollY+element.getBoundingClientRect().top;
-   const boundaryNudge=stop>=.999?2:0;
-   return Math.round(sectionTop+element.offsetHeight*stop+boundaryNudge);
-  };
-  const easeInOutCubic=(value:number)=>value<.5?4*value*value*value:1-Math.pow(-2*value+2,3)/2;
-  const forceInstantProgrammaticScroll=()=>{
-   if(previousScrollBehavior!==null)return;
-   previousScrollBehavior=document.documentElement.style.scrollBehavior;
-   document.documentElement.style.scrollBehavior='auto';
-  };
-  const restorePageScrollBehavior=()=>{
-   if(previousScrollBehavior===null)return;
-   document.documentElement.style.scrollBehavior=previousScrollBehavior;
-   previousScrollBehavior=null;
-  };
-  const setProgrammaticScrollTop=(value:number)=>{
-   document.documentElement.scrollTop=value;
-   document.body.scrollTop=value;
-  };
-  const motionClipForMove=(segment:NavigationSegment,stop:number):{sequence:Sequence;direction:'forward'|'reverse'}|null=>{
-   const from=segment.progress;
-   if(segment.name==='intro'){
-    if(stop===.82&&from<stop)return{sequence:'selected',direction:'forward'};
-    if(stop===0&&from>stop)return{sequence:'selected',direction:'reverse'};
-    return null;
-   }
-   if(stop===.86&&from<stop)return{sequence:'restricted',direction:'forward'};
-   if(stop===.48&&from>stop)return{sequence:'restricted',direction:'reverse'};
-   return null;
-  };
-  let motionVideoRequest=0;
-  const stopMotionVideo=()=>{
-   motionVideoRequest+=1;
-   motionVideoRefs.current.forEach(video=>{
-    video.pause();
-    video.dataset.active='false';
-   });
-   renderedModelRef.current?.setAttribute('data-motion-active','false');
-  };
-  const playMotionVideo=(clip:ReturnType<typeof motionClipForMove>,duration:number)=>{
-   if(!clip)return;
-   const video=motionVideoRefs.current.get(`${clip.sequence}-${clip.direction}`);if(!video)return;
-   const request=++motionVideoRequest;
-   video.pause();
-   video.currentTime=0;
-   video.playbackRate=Math.min(1.5,Math.max(.75,1000/duration));
-   const activate=()=>{
-    if(request!==motionVideoRequest)return;
-    motionVideoRefs.current.forEach(candidate=>{
-     if(candidate===video)return;
-     candidate.pause();
-     candidate.dataset.active='false';
-    });
-    video.dataset.active='true';
-    renderedModelRef.current?.setAttribute('data-motion-active','true');
-   };
-   if('requestVideoFrameCallback' in video)video.requestVideoFrameCallback(()=>activate());
-   else requestAnimationFrame(activate);
-   void video.play().catch(()=>{
-    if(request!==motionVideoRequest)return;
-    video.dataset.active='false';
-    const fallback=Array.from(motionVideoRefs.current.values()).some(candidate=>candidate.dataset.active==='true');
-    renderedModelRef.current?.setAttribute('data-motion-active',fallback?'true':'false');
-   });
-  };
-  const startCameraMove=(segment:NavigationSegment,stop:number)=>{
-   const from=window.scrollY;
-   const to=scrollTopForStop(segment.element,stop);
-   if(Math.abs(to-from)<2)return;
-   if(cameraMotionFrame!==null)cancelAnimationFrame(cameraMotionFrame);
-   const directOverview=segment.name==='return'&&((stop===.48&&segment.progress<.48)||(stop===0&&segment.progress>.035));
-   if(directOverview){
-    motionActive=true;
-    gestureArmed=false;
-    wheelAccumulator=0;
-    forceInstantProgrammaticScroll();
-    renderSequenceFrame('selected',0);
-    stopMotionVideo();
-    setProgrammaticScrollTop(to);
-    update();
-    motionActive=false;
-    restorePageScrollBehavior();
-    rearmAfterQuiet();
-    onScroll();
-    return;
-   }
-   motionActive=true;
-   gestureArmed=false;
-   wheelAccumulator=0;
-   forceInstantProgrammaticScroll();
-   const startedAt=performance.now();
-   const distanceInViewports=Math.abs(to-from)/Math.max(1,window.innerHeight);
-   const duration=reducedMotionRef.current?260:Math.min(1120,Math.max(860,800+distanceInViewports*145));
-   const motionClip=motionClipForMove(segment,stop);
-   playMotionVideo(motionClip,duration);
-   const step=(now:number)=>{
-    const progress=clamp((now-startedAt)/duration);
-    setProgrammaticScrollTop(mix(from,to,easeInOutCubic(progress)));
-    if(progress<1){cameraMotionFrame=requestAnimationFrame(step);return}
-    setProgrammaticScrollTop(to);
-    cameraMotionFrame=null;
-    motionActive=false;
-    update();
-    restorePageScrollBehavior();
-    rearmAfterQuiet();
-    onScroll();
-   };
-   cameraMotionFrame=requestAnimationFrame(step);
-  };
-  const normalizeWheelDelta=(event:WheelEvent)=>{
-   if(event.deltaMode===WheelEvent.DOM_DELTA_LINE)return event.deltaY*16;
-   if(event.deltaMode===WheelEvent.DOM_DELTA_PAGE)return event.deltaY*window.innerHeight;
-   return event.deltaY;
-  };
-  const onScroll=()=>{if(frame.current===null)frame.current=requestAnimationFrame(update)};
+  // Native scrolling owns the camera. No wheel, keyboard or touch interception.
+  const onScroll=()=>{if(!document.hidden&&frame.current===null)frame.current=requestAnimationFrame(update)};
+  const onResize=()=>{measureCanvas();onScroll()};
+  const onVisibility=()=>{if(document.hidden){if(frame.current!==null)cancelAnimationFrame(frame.current);frame.current=null}else onResize()};
   const onHashChange=()=>{
    if(location.hash==='#work'||location.hash==='#playground')anchorBypassRef.current={target:location.hash.slice(1) as 'work'|'playground',settled:false};
    onScroll();
@@ -421,60 +278,25 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
    const anchor=(event.target as Element|null)?.closest<HTMLAnchorElement>('a[href$="#work"],a[href$="#playground"]');
    if(anchor)anchorBypassRef.current={target:anchor.hash.slice(1) as 'work'|'playground',settled:false};
   };
-  const onWheelIntent=(event:WheelEvent)=>{
-   const delta=normalizeWheelDelta(event);
-   if(delta<0&&anchorBypassRef.current?.settled){anchorBypassRef.current=null;onScroll();return}
-   const segment=activeNavigationSegment();
-   if(!segment||Math.abs(delta)<.5)return;
-   const direction:1|-1=delta>0?1:-1;
-   const targetStop=nextNavigationStop(segment,direction);
-   if(targetStop===null)return;
-   event.preventDefault();
-   const now=performance.now();
-   if(motionActive){
-    lastWheelTime=now;
-    rearmAfterQuiet();
-    return;
-   }
-   if(!gestureArmed){
-    if(now-lastWheelTime<=90){rearmAfterQuiet();return}
-    gestureArmed=true;
-    wheelAccumulator=0;
-   }
-   if(direction!==wheelDirection||now-lastWheelTime>140)wheelAccumulator=0;
-   wheelDirection=direction;
-   lastWheelTime=now;
-   wheelAccumulator+=Math.abs(delta);
-   if(wheelAccumulator<.75)return;
-   startCameraMove(segment,targetStop);
-  };
-  const onKeyDown=(event:KeyboardEvent)=>{
-   if(!['ArrowDown','ArrowUp','PageDown','PageUp','Down','Up','Page_Down','Page_Up'].includes(event.key))return;
-   const segment=activeNavigationSegment();if(!segment||motionActive)return;
-   const direction:1|-1=['ArrowDown','PageDown','Down','Page_Down'].includes(event.key)?1:-1;
-   const targetStop=nextNavigationStop(segment,direction);if(targetStop===null)return;
-   event.preventDefault();startCameraMove(segment,targetStop);
-  };
-  const onTouchStart=(event:TouchEvent)=>{
-   touchStartYRef.current=event.touches[0]?.clientY??0;
-   touchLastYRef.current=touchStartYRef.current;
-  };
-  const onTouchMove=(event:TouchEvent)=>{
-   const currentY=event.touches[0]?.clientY??touchStartYRef.current;
-   touchLastYRef.current=currentY;
-   if(currentY-touchStartYRef.current>8&&anchorBypassRef.current?.settled){anchorBypassRef.current=null;onScroll()}
-  };
-  const onTouchEnd=()=>{
-   const distance=touchStartYRef.current-touchLastYRef.current;
-   if(Math.abs(distance)<44||motionActive)return;
-   const segment=activeNavigationSegment();if(!segment)return;
-   const direction:1|-1=distance>0?1:-1;
-   const targetStop=nextNavigationStop(segment,direction);if(targetStop===null)return;
-   startCameraMove(segment,targetStop);
-  };
   if(location.hash==='#work'||location.hash==='#playground')anchorBypassRef.current={target:location.hash.slice(1) as 'work'|'playground',settled:false};
-  update();window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',onScroll);window.addEventListener('hashchange',onHashChange);window.addEventListener('wheel',onWheelIntent,{passive:false});window.addEventListener('keydown',onKeyDown);window.addEventListener('touchstart',onTouchStart,{passive:true});window.addEventListener('touchmove',onTouchMove,{passive:true});window.addEventListener('touchend',onTouchEnd,{passive:true});document.addEventListener('click',onAnchorClick,true);
-  return()=>{media.removeEventListener('change',updateMotion);window.removeEventListener('scroll',onScroll);window.removeEventListener('resize',onScroll);window.removeEventListener('hashchange',onHashChange);window.removeEventListener('wheel',onWheelIntent);window.removeEventListener('keydown',onKeyDown);window.removeEventListener('touchstart',onTouchStart);window.removeEventListener('touchmove',onTouchMove);window.removeEventListener('touchend',onTouchEnd);document.removeEventListener('click',onAnchorClick,true);if(frame.current!==null)cancelAnimationFrame(frame.current);if(cameraMotionFrame!==null)cancelAnimationFrame(cameraMotionFrame);if(gestureRearmTimer!==null)window.clearTimeout(gestureRearmTimer);stopMotionVideo();restorePageScrollBehavior();if(idleWindow.cancelIdleCallback&&typeof warmId==='number')idleWindow.cancelIdleCallback(warmId);else window.clearTimeout(warmId);document.body.style.cursor=''};
+  const canvasObserver=new ResizeObserver(onResize);
+  if(renderedModelRef.current)canvasObserver.observe(renderedModelRef.current);
+  update();
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onResize,{passive:true});
+  window.addEventListener('hashchange',onHashChange);
+  document.addEventListener('visibilitychange',onVisibility);
+  document.addEventListener('click',onAnchorClick,true);
+  return()=>{
+   disposed=true;
+   media.removeEventListener('change',updateMotion);
+   window.removeEventListener('scroll',onScroll);window.removeEventListener('resize',onResize);window.removeEventListener('hashchange',onHashChange);
+   document.removeEventListener('visibilitychange',onVisibility);document.removeEventListener('click',onAnchorClick,true);
+   if(frame.current!==null)cancelAnimationFrame(frame.current);
+   canvasObserver.disconnect();destinationObserver.disconnect();
+   frameCacheRef.current.clear();pendingFramesRef.current.clear();
+  };
+
  },[]);
 
  const rightEntry=phase==='approach-restricted'||phase==='pickup-restricted-disc'||phase==='handoff-to-playground';
@@ -485,13 +307,7 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
   <div className={`${styles.canvasLayer} ${canvasVisible?styles.canvasVisible:''}`} aria-hidden="true">
    <div ref={renderedModelRef} className={styles.renderedModel}>
     <canvas ref={sequenceCanvasRef} className={styles.sequenceRender}/>
-    {(['selected-forward','selected-reverse','restricted-forward','restricted-reverse'] as const).map(clip=>{
-     const [sequence,direction]=clip.split('-') as [Sequence,'forward'|'reverse'];
-     return <video key={clip} ref={node=>{if(node)motionVideoRefs.current.set(clip,node);else motionVideoRefs.current.delete(clip)}} className={styles.motionVideo} muted playsInline preload="auto">
-      <source src={`/models/media-store/motion/mobile/${sequence}-${direction}.webm`} media="(max-width: 767px)" type="video/webm"/>
-      <source src={`/models/media-store/motion/desktop/${sequence}-${direction}.webm`} type="video/webm"/>
-     </video>;
-    })}
+
    </div>
    <div className={styles.topline}><span>MEDIA STORE / 00—02</span><span ref={progressLabelRef}>00%</span></div>
    <div className={`${styles.sideLabel} ${styles.leftLabel} ${leftEntry?styles.visible:''}`}>

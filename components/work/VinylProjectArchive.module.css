@@ -1,10 +1,12 @@
+.focusLayer{--focus-top:72px}
+@media(max-width:767px){.focusLayer{--focus-top:60px}}
 .archive{
  --archive-line:#171717;
  --archive-paper:#f5f3ee;
  position:relative;
  width:100%;
- height:245svh;
- min-height:90rem;
+ height:170svh;
+ min-height:0;
  color:#111;
  background:var(--archive-paper);
  font-family:var(--font-latin),Arial,sans-serif;
@@ -15,9 +17,9 @@
  position:sticky;
  top:72px;
  height:calc(100svh - 72px);
- min-height:42rem;
+ min-height:0;
  display:grid;
- grid-template-rows:minmax(0,1fr);
+ grid-template-rows:minmax(0,1fr) auto;
  overflow:clip;
  background:var(--archive-paper);
 }
@@ -34,7 +36,7 @@
  border:0;
 }
 
-.info{position:relative;z-index:4;min-width:0;padding:clamp(1.7rem,2.4vw,2.7rem) 0;animation:infoReveal .48s cubic-bezier(.22,1,.36,1) both}
+.info{position:relative;z-index:4;min-width:0;padding:clamp(1.7rem,2.4vw,2.7rem) 0;animation:infoReveal 180ms cubic-bezier(.16,1,.3,1) both}
 .infoKicker{font:500 .57rem var(--font-mono),monospace;letter-spacing:.08em;color:#555}
 .primaryInfo{display:grid;grid-template-columns:minmax(6.8rem,.42fr) minmax(0,2fr) minmax(7rem,.42fr);grid-template-rows:auto auto;column-gap:clamp(2rem,4.5vw,5.8rem);align-items:end;padding:clamp(2.2rem,3.8vw,4.2rem) 0 clamp(2.8rem,4.8vw,5.4rem);background:var(--archive-paper);border:0}
 .primaryInfo .infoKicker{grid-column:1;grid-row:1/3;align-self:start;padding-top:.25rem;font-size:.5rem;letter-spacing:.12em;color:#6a6a67}
@@ -57,7 +59,7 @@
  min-height:0;
  touch-action:pan-y;
  user-select:none;
- perspective:1500px;
+ perspective:1800px;
  cursor:crosshair;
  outline:none;
  z-index:1;
@@ -91,7 +93,7 @@
  transition:transform .64s cubic-bezier(.22,1,.36,1),clip-path .62s cubic-bezier(.22,1,.36,1),opacity .38s ease,visibility 0s linear .64s;
  visibility:hidden;
  pointer-events:none;
- will-change:transform,clip-path,opacity;
+ will-change:auto;
 }
 .archivePlayer[data-visible="true"]{
  opacity:1;
@@ -201,9 +203,9 @@
   radial-gradient(circle at 50% 50%,transparent 0 21%,rgba(255,255,255,.025) 21.2% 21.55%,transparent 21.8% 100%),
   repeating-radial-gradient(circle at 50% 50%,#171717 0 1px,#080808 1.4px 3px,#202020 3.5px 4.3px,#090909 4.7px 7px);
  box-shadow:0 .22rem .42rem rgba(0,0,0,.12),0 1.05rem 1.8rem rgba(0,0,0,calc(var(--vinyl-shadow) * .54)),inset 0 0 0 2px #050505,inset 0 0 2.4rem rgba(255,255,255,.045);
- filter:brightness(var(--vinyl-brightness));
+ filter:none;
  backface-visibility:hidden;
- transition:box-shadow .32s ease,filter .38s ease,transform .46s cubic-bezier(.22,1,.36,1);
+ transition:none;
 }
 
 .discSurface:before{
@@ -242,10 +244,10 @@
  border:1px solid rgba(0,0,0,.5);
  border-radius:50%;
  background:var(--label-color);
- filter:brightness(var(--vinyl-label-light));
+ filter:none;
  box-shadow:0 0 0 3px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.25);
  text-align:center;
- transition:filter .25s ease;
+ transition:none;
 }
 
 .discLabel:before{content:"";position:absolute;inset:7%;border:1px solid rgba(0,0,0,.25);border-radius:50%}
@@ -296,14 +298,14 @@
  letter-spacing:.075em;
 }
 .archiveCounter{display:flex;align-items:baseline;gap:.45rem}.archiveCounter b{font-size:1.15rem}.archiveCounter span{color:#777}
-.archiveControls{display:flex;justify-content:flex-end;align-items:center;gap:.45rem}.archiveControls button{width:2rem;height:2rem;border:1px solid #111;border-radius:50%;background:transparent;cursor:pointer}.archiveControls button:hover:not(:disabled),.archiveControls button:focus-visible{background:#111;color:#f5f3ee}.archiveControls button:disabled{opacity:.25;cursor:default}.archiveControls>span{margin-left:.55rem}
+.archiveControls{display:flex;justify-content:flex-end;align-items:center;gap:.45rem}.archiveControls button{width:44px;height:44px;border:1px solid #111;border-radius:50%;background:transparent;cursor:pointer}.archiveControls button:hover:not(:disabled),.archiveControls button:focus-visible{background:#111;color:#f5f3ee}.archiveControls button:disabled{opacity:.25;cursor:default}.archiveControls>span{margin-left:.55rem}
 
 .archive[data-mode="focus"] .archiveGrid,
 .archive[data-mode="focus"] .archiveFooter{pointer-events:none}
 .archive[data-mode="focus"] .record{opacity:.12!important}
 .archive[data-mode="focus"] .record[data-active="true"]{opacity:.24!important}
 .archive[data-mode="focus"] .discSurface{filter:none;transform:none}
-.archive[data-mode="focus"][data-closing="true"] .record{opacity:var(--vinyl-opacity)!important;transition-duration:.5s;transition-delay:1.02s}
+.archive[data-mode="focus"][data-closing="true"] .record{opacity:.7!important;transition-duration:180ms;transition-delay:0ms}
 
 .focusLayer{
  --focus-from-x:0px;
@@ -313,28 +315,30 @@
  z-index:45;
  inset:72px 0 0;
  display:grid;
- grid-template-columns:minmax(13rem,1fr) minmax(28rem,42vw) minmax(15rem,1fr);
+ grid-template-columns:minmax(0,1fr) minmax(0,42vw) minmax(0,1fr);
  grid-template-rows:1fr 1fr;
  grid-template-areas:"top-left disc top-right" "bottom-left disc bottom-right";
  gap:clamp(1rem,2.4vw,3rem);
  align-items:center;
- padding:clamp(1.5rem,3vw,3rem) var(--gutter) clamp(5rem,10vh,8rem);
+ padding:clamp(2.8rem,5vh,4rem) var(--gutter) clamp(3.4rem,7vh,5rem);
  overflow:auto;
  background:rgba(232,232,227,.94);
  color:#111;
  backdrop-filter:none;
- animation:focusLayerIn .34s ease both;
+ animation:focusLayerIn 180ms cubic-bezier(.16,1,.3,1) both;
 }
-.focusLayer[data-closing="true"]{animation:focusLayerOut 1.58s cubic-bezier(.22,1,.36,1) both;pointer-events:none}
+.focusLayer[data-closing="true"]{animation:focusLayerOut 220ms cubic-bezier(.16,1,.3,1) both;pointer-events:none}
 .focusLayer[data-closing="true"] .focusClose{opacity:0;transform:translateY(-5px);transition:opacity .2s ease,transform .28s cubic-bezier(.22,1,.36,1)}
 .focusClose{position:absolute;z-index:8;top:1.1rem;right:var(--gutter);display:flex;align-items:center;gap:.65rem;padding:0;border:0;background:transparent;font:600 .58rem var(--font-mono),monospace;letter-spacing:.08em;cursor:pointer}
-.focusClose b{width:2.25rem;height:2.25rem;display:grid;place-items:center;border:1px solid #111;border-radius:50%;font:400 1.3rem/1 var(--font-latin),sans-serif;transition:background .2s ease,color .2s ease}
+.focusClose b{width:44px;height:44px;display:grid;place-items:center;border:1px solid #111;border-radius:50%;font:400 1.3rem/1 var(--font-latin),sans-serif;transition:background .2s ease,color .2s ease}
 .focusClose:hover b,.focusClose:focus-visible b{background:#111;color:#f5f3ee}
 
-.focusDiscScene{grid-area:disc;position:relative;z-index:3;width:min(42vw,37rem);aspect-ratio:1;justify-self:center;perspective:1450px;animation:focusDiscExtract .48s cubic-bezier(.22,1,.36,1) both}
-.focusDisc{position:absolute;inset:0;transform-style:preserve-3d;animation:focusDiscFlip .7s .16s cubic-bezier(.22,1,.36,1) both;will-change:transform}
-.focusLayer[data-closing="true"] .focusDiscScene{animation:focusDiscReturn .62s .9s cubic-bezier(.22,1,.36,1) both}
-.focusLayer[data-closing="true"] .focusDisc{animation:focusDiscUnflip .68s .06s cubic-bezier(.4,0,.2,1) both}
+.focusDiscScene{grid-area:disc;position:relative;z-index:3;width:min(42vw,calc(100svh - 12rem),37rem);aspect-ratio:1;justify-self:center;perspective:1800px;transform-origin:center;will-change:transform,opacity}
+.focusDisc{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(0);transition:transform 220ms cubic-bezier(.16,1,.3,1)}
+.focusDisc[data-face="back"]{transform:rotateY(180deg)}
+
+.focusLayer[data-closing="true"] .focusDisc{transform:rotateY(0)}
+.focusFlip{position:absolute;left:50%;bottom:1.2rem;transform:translateX(-50%);min-height:44px;padding:.6rem 1.1rem;border:1px solid #111;background:transparent;color:#111;font:600 .7rem var(--font-mono),monospace;cursor:pointer}
 .focusDiscFace{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;border:1px solid #3d3d3d;border-radius:50%;backface-visibility:hidden;background:repeating-radial-gradient(circle at 50% 50%,#171717 0 1px,#080808 1.4px 3px,#202020 3.5px 4.3px,#090909 4.7px 7px);box-shadow:0 2.4rem 5rem rgba(0,0,0,.3),inset 0 0 0 2px #050505,inset 0 0 4rem rgba(255,255,255,.055)}
 .focusDiscFace:after{content:"";position:absolute;inset:1.1%;border:1px solid rgba(255,255,255,.14);border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.6)}
 .focusDiscFront{transform:rotateY(0deg) translateZ(5px)}
@@ -350,8 +354,8 @@
 .focusBackLabel strong{max-width:85%;font:650 clamp(.55rem,.75vw,.76rem)/1.05 var(--font-latin),sans-serif;text-transform:uppercase;text-wrap:balance}
 .focusDiscHole{position:absolute;z-index:5;left:50%;top:50%;width:4.3%;aspect-ratio:1;border-radius:50%;background:#050505;box-shadow:0 0 0 2px rgba(255,255,255,.18);transform:translate(-50%,-50%)}
 
-.focusInfo{position:relative;z-index:4;max-width:24rem;padding-top:.85rem;border-top:1px solid #111;animation:focusInfoIn .52s .5s cubic-bezier(.22,1,.36,1) both}
-.focusLayer[data-closing="true"] .focusInfo{animation:focusInfoOut .32s cubic-bezier(.55,0,1,.45) both}
+.focusInfo{position:relative;z-index:4;min-width:0;max-width:24rem;padding-top:.85rem;border-top:1px solid #111;animation:focusInfoIn 180ms .06s cubic-bezier(.16,1,.3,1) both;overflow-wrap:anywhere}
+.focusLayer[data-closing="true"] .focusInfo{animation:focusInfoOut 140ms cubic-bezier(.16,1,.3,1) both}
 .focusLayer[data-closing="true"] .focusTopRight{animation-delay:.03s}
 .focusLayer[data-closing="true"] .focusBottomLeft{animation-delay:.06s}
 .focusLayer[data-closing="true"] .focusTopLeft{animation-delay:.09s}
@@ -359,7 +363,7 @@
 .focusInfo>strong{display:block;font-family:var(--font-cn),sans-serif;font-size:clamp(.78rem,1vw,1rem);line-height:1.55}
 .focusInfo>span{display:block;margin-top:.5rem;font:500 .62rem var(--font-mono),monospace;letter-spacing:.08em}
 .focusInfo>p{margin:.55rem 0 0;font-family:var(--font-cn),sans-serif;font-size:clamp(.72rem,.85vw,.88rem);font-weight:500;line-height:1.75;text-wrap:pretty}
-.focusInfo h2{margin:0;font-family:var(--font-cn),sans-serif;font-size:clamp(2.4rem,4.8vw,5.4rem);font-weight:700;line-height:.94;letter-spacing:-.06em;text-wrap:balance}
+.focusInfo h2{margin:0;font-family:var(--font-cn),sans-serif;font-size:clamp(1.8rem,3.6vw,3.8rem);font-weight:700;line-height:1.06;letter-spacing:-.035em;text-wrap:balance}
 .focusInfo>a{display:inline-block;margin-top:1.25rem;padding-bottom:.22rem;border-bottom:1px solid;font:650 .62rem var(--font-mono),monospace;letter-spacing:.07em}
 .focusTopLeft{grid-area:top-left;align-self:end}.focusTopLeft strong{font:600 clamp(2.4rem,4vw,4.6rem)/.9 var(--font-latin),sans-serif;letter-spacing:-.06em}.focusTopLeft span{margin-top:1.25rem}
 .focusTopRight{grid-area:top-right;align-self:end;justify-self:end;width:100%}
@@ -368,24 +372,24 @@
 .focusMobileBack{display:none}
 
 @keyframes focusLayerIn{from{opacity:0}to{opacity:1}}
-@keyframes focusLayerOut{0%,48%{opacity:1}68%{opacity:.96}100%{opacity:0}}
+@keyframes focusLayerOut{from{opacity:1}to{opacity:0}}
 @keyframes focusDiscExtract{from{opacity:.68;transform:translate3d(var(--focus-from-x),var(--focus-from-y),0) scale(var(--focus-from-scale))}to{opacity:1;transform:translate3d(0,-18px,0) scale(1.035)}}
 @keyframes focusDiscReturn{0%{opacity:1;transform:translate3d(0,-18px,0) scale(1.035)}14%{opacity:1;transform:translate3d(0,-21px,0) scale(1.04)}82%{opacity:1}100%{opacity:.08;transform:translate3d(var(--focus-from-x),var(--focus-from-y),0) scale(var(--focus-from-scale))}}
 @keyframes focusDiscFlip{from{transform:rotateY(0deg) rotateZ(-3deg)}to{transform:rotateY(180deg) rotateZ(0deg)}}
 @keyframes focusDiscUnflip{0%{transform:rotateY(180deg) rotateZ(0deg)}50%{transform:rotateY(90deg) rotateZ(-1deg)}100%{transform:rotateY(0deg) rotateZ(-2deg)}}
-@keyframes focusInfoIn{from{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(12px)}to{opacity:1;clip-path:inset(0);transform:none}}
-@keyframes focusInfoOut{from{opacity:1;clip-path:inset(0)}to{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(-8px)}}
+@keyframes focusInfoIn{from{opacity:.7;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes focusInfoOut{from{opacity:1}to{opacity:0}}
 @keyframes focusDiscExtractMobile{from{opacity:.45;transform:translateY(18px) scale(.9)}to{opacity:1;transform:none}}
 
-@keyframes infoReveal{from{opacity:0;transform:translateY(.8rem);clip-path:inset(0 0 18% 0)}to{opacity:1;transform:none;clip-path:inset(0)}}
+@keyframes infoReveal{from{opacity:.7}to{opacity:1}}
 
 @media(max-width:1100px){
  .primaryInfo{grid-template-columns:minmax(6.5rem,.42fr) minmax(0,1.75fr) minmax(7rem,.45fr)}
  .primaryInfo h2{font-size:clamp(1.08rem,1.8vw,1.45rem)}
  .notesInfo{grid-template-columns:minmax(13rem,.8fr) minmax(0,1.35fr) auto;gap:1.5rem;padding:1.4rem 0 2.2rem}
  .record{width:clamp(18rem,34vw,23rem)}
- .focusLayer{grid-template-columns:minmax(11rem,.8fr) minmax(24rem,42vw) minmax(12rem,.9fr);gap:1.35rem;padding-left:3rem;padding-right:3rem}
- .focusDiscScene{width:min(43vw,31rem)}
+ .focusLayer{grid-template-columns:minmax(0,.8fr) minmax(0,42vw) minmax(0,.9fr);gap:1.35rem;padding-left:2rem;padding-right:2rem}
+ .focusDiscScene{width:min(42vw,calc(100svh - 12rem),31rem)}
  .focusInfo h2{font-size:clamp(2.3rem,5.5vw,4.4rem)}
  .archivePlayer{width:20rem;--player-top:clamp(4.75rem,9svh,6rem)}
  .playerContent{padding:.9rem;gap:.46rem}
@@ -398,7 +402,7 @@
  .archivePlayer{display:none!important}
 }
 
-@media(max-width:767px){
+@media(max-width:767px),(max-height:600px),(max-width:1023px) and (pointer:coarse){
  .archive{height:auto;min-height:auto;overflow:hidden}
  .archiveSticky{position:relative;top:auto;height:auto;min-height:0;display:block;overflow:visible}
  .archiveGrid{display:flex;flex-direction:column;min-height:auto;gap:0}
@@ -408,7 +412,7 @@
  .englishTitle{font-size:.65rem}
  .englishTitle{grid-column:1;grid-row:3;align-self:end}
  .primaryMeta{grid-column:2;grid-row:3;align-self:end;display:flex;flex-direction:row;gap:1rem;padding:0;border:0}
- .stage{order:2;width:100%;min-height:30rem;margin:0;cursor:grab}
+ .stage{order:2;width:100%;height:clamp(14rem,calc(100svh - 18rem),33rem);min-height:0;margin:0;cursor:grab}
  .stage:active{cursor:grabbing}
  .stageCaption{top:1.15rem}
  .cameraRig{inset:3.25rem 0 1rem;transform:none!important}
@@ -421,11 +425,12 @@
  .archiveFooter>span{display:none}
  .archiveControls>span{display:none}
  .archiveControls{justify-self:end}
- .focusLayer{inset:60px 0 0;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:3.8rem 1.25rem 2rem;overflow-y:auto;background:rgba(238,237,232,.96);backdrop-filter:blur(2px)}
- .focusClose{position:fixed;top:4.35rem;right:1.1rem}
+ .focusLayer{inset:var(--focus-top) 0 0;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:3.8rem max(1.25rem,env(safe-area-inset-left)) max(2rem,env(safe-area-inset-bottom));overflow-y:auto;background:rgba(238,237,232,.98);backdrop-filter:none}
+ .focusClose{position:fixed;top:calc(var(--focus-top) + .75rem);right:1.1rem}
  .focusClose>span{display:none}
- .focusDiscScene{order:1;flex:0 0 auto;width:min(84vw,23rem);margin:0 auto 2.5rem;animation-name:focusDiscExtractMobile}
- .focusInfo{max-width:none;width:100%;animation-delay:.38s}
+ .focusDiscScene{order:1;flex:0 0 auto;width:min(100%,calc(100svh - 12rem),23rem);margin:0 auto 1rem}
+ .focusFlip{order:2;position:static;align-self:center;transform:none;margin:0 auto 1.5rem}
+ .focusInfo{max-width:none;width:100%;animation-delay:0ms}
  .focusTopLeft{order:2;display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom:1.5rem}
  .focusTopLeft small{grid-column:1/-1}.focusTopLeft strong{font-size:2.6rem}.focusTopLeft span{margin:0}
  .focusTopRight{order:4;margin-top:1.5rem}
@@ -435,7 +440,7 @@
 }
 
 @media(max-width:390px){
- .stage{min-height:26rem}
+ .stage{min-height:0}
  .record{width:min(76vw,19rem)}
  .primaryInfo{min-height:12.5rem}
 }

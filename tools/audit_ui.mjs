@@ -33,7 +33,7 @@ for (const profile of profiles) {
     const record = document.querySelector('[data-vinyl-index="0"]');
     const stage = record?.parentElement?.parentElement?.parentElement;
     const r = record?.getBoundingClientRect(), s = stage?.getBoundingClientRect();
-    return {width: innerWidth, height: innerHeight, pageOverflow: document.documentElement.scrollWidth - innerWidth, record: r?.toJSON(), stage: s?.toJSON(), clipped: !!r && !!s && (r.left < s.left - 1 || r.right > s.right + 1 || r.top < s.top - 1 || r.bottom > s.bottom + 1)};
+    return {width: innerWidth, height: innerHeight, pageOverflow: document.documentElement.scrollWidth - innerWidth, record: r?.toJSON(), stage: s?.toJSON(), viewportClipped: !!r && (r.left < -1 || r.right > innerWidth+1 || r.bottom > innerHeight+1), clipped: !!r && !!s && (r.left < s.left - 1 || r.right > s.right + 1 || r.top < s.top - 1 || r.bottom > s.bottom + 1)};
   });
   const timing = await page.evaluate(() => new Promise(resolve => {
     const values = []; let previous = performance.now(); const start = previous;
@@ -55,7 +55,41 @@ for (const profile of profiles) {
   const closeStart = Date.now();
   await page.keyboard.press('Escape');
   await focus.waitFor({state: 'detached', timeout: 4000});
-  report.push({profile: profile.name, bounds, timing, focus: focusBounds, closeMs: Date.now() - closeStart, errors});
+  const closeMs=Date.now()-closeStart;
+  const next=page.getByRole('button',{name:'下一个作品',exact:true});
+  const selections=[];
+  if(await next.count()){
+    for(let index=1;index<7;index++){
+      await next.click();
+      await page.waitForFunction(index=>document.querySelector(`[data-vinyl-index="${index}"]`)?.getAttribute('data-active')==='true',index);
+      await page.waitForTimeout(260);
+      selections.push(await page.evaluate(index=>{
+        const r=document.querySelector(`[data-vinyl-index="${index}"]`)?.getBoundingClientRect();
+        return {index,fullyVisible:!!r&&r.left>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1};
+      },index));
+    }
+    await page.locator('[data-vinyl-index="6"]').press('Home');
+    await page.locator('[data-vinyl-index="0"]').press('Enter');
+    await focus.waitFor();
+    await page.waitForTimeout(60);
+    await page.getByRole('button',{name:'关闭项目档案',exact:true}).click();
+    await focus.waitFor({state:'detached'});
+  }
+  const scrollRestored=await page.evaluate(()=>document.body.style.overflow!=='hidden');
+  let swipe=null;
+  if(profile.mobile&&await next.count()){
+    const point=await page.locator('[data-vinyl-index="0"]').boundingBox();
+    if(point){
+      const x=point.x+point.width*.65,y=point.y+point.height/2;
+      await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+      await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-20,y}]});
+      await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-130,y}]});
+      await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      await page.waitForTimeout(350);
+      swipe=await page.evaluate(()=>({selected:document.querySelector('[data-vinyl-index][data-active="true"]')?.getAttribute('data-vinyl-index'),accidentalDialog:!!document.querySelector('section[id^="vinyl-focus-"]')}));
+    }
+  }
+  report.push({profile: profile.name, bounds, timing, focus: focusBounds, closeMs, selections,swipe,scrollRestored,errors});
   await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
   await context.close();
 }

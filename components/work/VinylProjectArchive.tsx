@@ -4,6 +4,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {projects} from '@/lib/content';
 import type {VinylArtwork} from '@/lib/vinylArtwork';
 import type {Locale} from '@/lib/types';
+import {motionTokens} from '@/lib/motionTokens';
 import VinylFocusView from './VinylFocusView';
 import VinylProjectInfo from './VinylProjectInfo';
 import VinylRecord from './VinylRecord';
@@ -21,7 +22,8 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
  const [closing,setClosing]=useState(false);
  const closeTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const motion=useVinylArchiveMotion(projects.length,mode==='browse');
- const sleeve=useVinylSleevePreview(mode==='browse');
+ // Project details are opened explicitly; hover previews must not cover the artifact.
+ const sleeve=useVinylSleevePreview(false);
  const activeProject=projects[motion.activeIndex];
  const artworkBySlug=new Map(artwork.map(item=>[item.slug,item]));
 
@@ -36,18 +38,20 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
   setMode('focus');
  };
 
- const closeFocus=useCallback(()=>{
-  if(mode!=='focus'||closing)return;
+ const finishClose=useCallback(()=>{
+  if(closeTimerRef.current){clearTimeout(closeTimerRef.current);closeTimerRef.current=null}
   const returnIndex=focusedIndex??motion.activeIndex;
+  setMode('browse');setFocusedIndex(null);setFocusOrigin(null);setClosing(false);
+  motion.focusIndex(returnIndex);
+ },[focusedIndex,motion.activeIndex,motion.focusIndex]);
+
+ const closeFocus=useCallback((immediate=false)=>{
+  if(mode!=='focus'||closing)return;
+  if(immediate||motion.reducedMotion){finishClose();return}
+  setFocusOrigin(motion.getRecordOrigin(focusedIndex??motion.activeIndex)??null);
   setClosing(true);
-  closeTimerRef.current=setTimeout(()=>{
-   setMode('browse');
-   setFocusedIndex(null);
-   setFocusOrigin(null);
-   setClosing(false);
-   motion.focusIndex(returnIndex);
-  },motion.reducedMotion?80:1640);
- },[closing,focusedIndex,mode,motion]);
+  closeTimerRef.current=setTimeout(finishClose,motionTokens.detail+80);
+ },[closing,focusedIndex,mode,motion,finishClose]);
 
  useEffect(()=>()=>{if(closeTimerRef.current)clearTimeout(closeTimerRef.current)},[]);
 
@@ -76,13 +80,15 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
     className={styles.stage}
     data-reduced-motion={motion.reducedMotion?'true':'false'}
     onClickCapture={event=>{
+     if(event.detail===0)return;
+     if(motion.didDrag()){event.preventDefault();event.stopPropagation();return}
      const index=motion.getPressedIndex()??motion.indexFromPoint(event.clientX,event.clientY);
      if(index===null)return;
      event.preventDefault();
      event.stopPropagation();
-     if(index===motion.activeIndex){
+     if(motion.canActivate(index)){
       const origin=motion.getRecordOrigin(index);
-      if(origin)openFocus(index,true,origin);
+      if(origin)openFocus(index,false,origin);
      }else{
       motion.moveTo(index);
      }
@@ -122,6 +128,15 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
    </div>
   </div>
 
+  <div className={styles.archiveFooter} aria-label={locale==='zh'?'浏览全部作品':'Browse every project'}>
+   <div className={styles.archiveCounter} aria-live="polite"><b>{String(motion.activeIndex+1).padStart(2,'0')}</b><span>/ {String(projects.length).padStart(2,'0')}</span></div>
+   <span>{locale==='zh'?'左右滑动浏览，点击光碟展开':'Browse with arrows or swipe; select a disc to open'}</span>
+   <div className={styles.archiveControls}>
+    <button type="button" disabled={motion.activeIndex===0} aria-label={locale==='zh'?'上一个作品':'Previous project'} onClick={event=>motion.moveTo(motion.activeIndex-1,event.detail===0)}>←</button>
+    <button type="button" disabled={motion.activeIndex===projects.length-1} aria-label={locale==='zh'?'下一个作品':'Next project'} onClick={event=>motion.moveTo(motion.activeIndex+1,event.detail===0)}>→</button>
+   </div>
+  </div>
+
   </div>
 
   {mode==='focus'&&focusedProject&&focusedArtwork&&<VinylFocusView
@@ -131,6 +146,7 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
    closing={closing}
    origin={focusOrigin}
    onDismiss={closeFocus}
+   onExited={finishClose}
   />}
  </section>;
 }
