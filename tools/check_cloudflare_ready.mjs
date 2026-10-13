@@ -1,5 +1,6 @@
 import {readFile, readdir, stat} from 'node:fs/promises';
 import path from 'node:path';
+import {VIDEO_BYTES} from '../cloudflare/video-range.mjs';
 
 const root = process.cwd();
 const limit = 25 * 1024 * 1024;
@@ -22,6 +23,7 @@ async function visit(directory) {
 await visit(path.join(root, 'public'));
 const video = await stat('public/playground/maxxxine/motion-cloudflare.mp4').catch(() => null);
 if (!video?.size) failures.push('Cloudflare video is missing or empty');
+else if (video.size !== VIDEO_BYTES) failures.push('Update VIDEO_BYTES to match the upload video before deploying');
 if (!(await readFile('components/PlaygroundWall.tsx', 'utf8')).includes('/playground/maxxxine/motion-cloudflare.mp4')) {
   failures.push('The playground must reference the Cloudflare video');
 }
