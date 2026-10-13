@@ -80,6 +80,11 @@ for (const profile of profiles) {
   let swipe=null;
   if(profile.mobile&&await next.count()){
     await page.locator('[data-vinyl-index="0"]').scrollIntoViewIfNeeded();
+    // Keep the gesture target below the fixed navigation after footer controls scroll it.
+    await page.evaluate(()=>{
+      const record=document.querySelector('[data-vinyl-index="0"]');
+      if(record)window.scrollBy({top:record.getBoundingClientRect().top-96,behavior:'instant'});
+    });
     await page.waitForTimeout(100);
     const point=await page.locator('[data-vinyl-index="0"]').boundingBox();
     if(point){
