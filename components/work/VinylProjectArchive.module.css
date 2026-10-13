@@ -402,6 +402,10 @@
  .archivePlayer{display:none!important}
 }
 
+@media(min-width:1024px) and (min-height:601px) and (hover:hover) and (pointer:fine){
+ .stage{width:calc(100% - clamp(20rem,25vw,26.875rem) - 2rem);justify-self:end}
+}
+
 @media(max-width:767px),(max-height:600px),(max-width:1023px) and (pointer:coarse){
  .archive{height:auto;min-height:auto;overflow:hidden}
  .archiveSticky{position:relative;top:auto;height:auto;min-height:0;display:block;overflow:visible}

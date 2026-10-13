@@ -97,7 +97,7 @@ export default function useVinylArchiveMotion(count:number,enabled=true){
   if(!rig||!stage)return;
   const width=rig.clientWidth,height=rig.clientHeight;
   const compact=window.matchMedia('(max-width: 767px), (max-height: 600px), (max-width: 1023px) and (pointer: coarse)').matches;
-  const diameter=Math.max(1,Math.min(width*.78,height*.8,compact?360:480,compact?width*.78:width*.34));
+  const diameter=Math.max(1,Math.min(width*.78,height*.8,compact?360:480,compact?width*.78:width*.46));
   layoutRef.current={width,height,diameter,compact};
   stage.dataset.layout=compact?'compact':'spatial';
   recordsRef.current.forEach(record=>{if(record)record.style.width=`${diameter}px`});
