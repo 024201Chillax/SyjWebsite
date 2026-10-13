@@ -2,7 +2,7 @@ name: Build Cloudflare portfolio
 
 on:
   push:
-    branches: [codex/cloudflare-deployment]
+    branches: [main, codex/cloudflare-deployment]
   pull_request:
   workflow_dispatch:
 
@@ -22,7 +22,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test:cloudflare
+      - run: pnpm check:cloudflare
       - run: pnpm build:cloudflare
         env:
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}

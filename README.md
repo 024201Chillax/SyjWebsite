@@ -26,7 +26,7 @@ pnpm build
 GitHub 单文件限制为 100 MiB；请使用 Git 或 GitHub Desktop 提交项目，
 不要使用 GitHub 网页拖拽上传（单文件限制为 25 MiB）。
 
-`public/playground/maxxxine/motion-web.mp4` 是网站使用的网页视频。
+`public/playground/maxxxine/motion-web.mp4` 保留为原网页视频；Cloudflare 上线版本使用新增的 `motion-cloudflare.mp4`。
 原始 `motion.mp4` 保留在本地并被忽略，部署不依赖它。
 视频保持 2560×1440、30 fps 和原始时长，使用 H.264/AAC 编码并支持快速开始播放。
 
@@ -44,6 +44,29 @@ GitHub 单文件限制为 100 MiB；请使用 Git 或 GitHub Desktop 提交项�
 需要设置站点地址时，可参考 `.env.example` 配置 `NEXT_PUBLIC_SITE_URL`。
 邮箱当前在 `components/ContactCard.tsx` 中配置为 `1806189648@qq.com`。
 请勿将真实私密环境变量提交到仓库。
+
+## Cloudflare Workers 部署
+
+本分支使用 OpenNext 将 Next.js 15 部署到 Cloudflare Workers。现有页面、路由和浏览器动效保留。
+
+1. 在 Workers & Pages 中从 GitHub 导入此仓库，Worker 名称设置为 `syjwebsite`，选择包含本配置的分支。
+2. 构建命令填写 `pnpm build:cloudflare`，部署命令填写 `pnpm deploy:cloudflare`，根目录保持仓库根目录。
+3. 在构建变量中将 `NEXT_PUBLIC_SITE_URL` 设置为控制台分配的正式 HTTPS 地址（不带末尾斜杠），然后构建部署。
+
+此方案无需启用 R2。`wrangler.jsonc` 声明 `IMAGES` 绑定，以保留 Next.js 图片优化；Cloudflare Images 默认免费方案每月包含 5000 次独特转换，超过免费额度不自动收费。保持免费方案即可，参见 https://developers.cloudflare.com/images/pricing/ 。
+
+本地检查：
+
+```sh
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm check:cloudflare
+pnpm build:cloudflare
+```
+
+`public/.assetsignore` 将原始大视频与大封面 PNG 排除出 Worker 静态上传，但不会删除原文件。网站使用新增的 `motion-cloudflare.mp4`：完整时长、2560×1440、30 fps、H.264/AAC，启用 faststart，文件大小小于 25 MiB。封面使用新增的 3200px WebP 网页版本，原始 PNG 保留在仓库中。
+
+GitHub Actions 的 `Build Cloudflare portfolio` 工作流会执行类型检查、静态资源上传检查及完整构建，并生成可供部署检查的构建产物。工作流本身不包含 Cloudflare 凭据，也不会自动发布。
 
 ## 素材与授权
 

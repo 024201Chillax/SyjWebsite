@@ -11,7 +11,7 @@
     "test": "node --test",
     "build:cloudflare": "opennextjs-cloudflare build",
     "deploy:cloudflare": "opennextjs-cloudflare deploy",
-    "test:cloudflare": "node --test cloudflare/media.test.mjs"
+    "check:cloudflare": "node tools/check_cloudflare_ready.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

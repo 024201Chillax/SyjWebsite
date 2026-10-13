@@ -12,6 +12,7 @@ coverage/
 tmp/
 tmp_*/
 outputs/
+output/
 *.log
 *.blend
 *.blend1
