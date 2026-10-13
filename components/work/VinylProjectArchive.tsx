@@ -22,8 +22,7 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
  const [closing,setClosing]=useState(false);
  const closeTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const motion=useVinylArchiveMotion(projects.length,mode==='browse');
- // Project details are opened explicitly; hover previews must not cover the artifact.
- const sleeve=useVinylSleevePreview(false);
+ const sleeve=useVinylSleevePreview(mode==='browse');
  const activeProject=projects[motion.activeIndex];
  const artworkBySlug=new Map(artwork.map(item=>[item.slug,item]));
 

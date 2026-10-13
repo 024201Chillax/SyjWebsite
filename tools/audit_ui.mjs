@@ -42,6 +42,21 @@ for (const profile of profiles) {
     requestAnimationFrame(tick);
   }));
   await page.screenshot({path: `${output}/${profile.name}-archive.png`});
+  let hoverPreview=null;
+  if(!profile.mobile){
+    const player=page.locator('aside[class*="archivePlayer"]');
+    await page.locator('[data-vinyl-index="0"]').hover();
+    await page.waitForFunction(()=>document.querySelector('aside[class*="archivePlayer"]')?.getAttribute('data-visible')==='true');
+    await page.waitForTimeout(700);
+    hoverPreview=await player.evaluate(element=>({visible:element.getAttribute('data-visible')==='true',title:element.querySelector('h3')?.textContent}));
+    await page.screenshot({path:`${output}/${profile.name}-hover.png`});
+    await player.hover();
+    await page.waitForTimeout(350);
+    assert.equal(await player.getAttribute('data-visible'),'true','Preview closes while hovering its panel');
+    await page.mouse.move(profile.width-5,75);
+    await page.waitForFunction(()=>document.querySelector('aside[class*="archivePlayer"]')?.getAttribute('data-visible')==='false');
+    assert.equal(hoverPreview.title,'龙蕴华彩','Preview shows the wrong project');
+  }
   await page.locator('[data-vinyl-index="0"]').press('Enter');
   const focus = page.locator('section[id^="vinyl-focus-"]');
   await focus.waitFor();
@@ -100,7 +115,7 @@ for (const profile of profiles) {
       swipe=await page.evaluate(()=>({selected:document.querySelector('[data-vinyl-index][data-active="true"]')?.getAttribute('data-vinyl-index'),accidentalDialog:!!document.querySelector('section[id^="vinyl-focus-"]')}));
     }
   }
-  report.push({profile: profile.name, bounds, timing, focus: focusBounds, closeMs, selections,swipe,scrollRestored,errors});
+  report.push({profile: profile.name, bounds, timing, focus: focusBounds, closeMs, selections,swipe,scrollRestored,hoverPreview,errors});
   await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
   await context.close();
 }
