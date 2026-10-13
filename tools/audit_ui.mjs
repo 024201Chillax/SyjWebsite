@@ -1,5 +1,6 @@
 import {chromium} from 'playwright';
 import {mkdir, writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
 const base = process.env.UI_BASE_URL || 'http://127.0.0.1:3000';
 const output = process.env.UI_AUDIT_OUTPUT || 'ui-audit';
 await mkdir(output, {recursive: true});
@@ -78,6 +79,8 @@ for (const profile of profiles) {
   const scrollRestored=await page.evaluate(()=>document.body.style.overflow!=='hidden');
   let swipe=null;
   if(profile.mobile&&await next.count()){
+    await page.locator('[data-vinyl-index="0"]').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
     const point=await page.locator('[data-vinyl-index="0"]').boundingBox();
     if(point){
       const x=point.x+point.width*.65,y=point.y+point.height/2;
@@ -95,4 +98,33 @@ for (const profile of profiles) {
 }
 await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report));
+const homepage=[];
+for(const width of [390,1440]){
+  const context=await browser.newContext({viewport:{width,height:900},isMobile:width===390,hasTouch:width===390,reducedMotion:'reduce'});
+  const page=await context.newPage();
+  await page.goto(`${base}/zh#work`,{waitUntil:'networkidle'});
+  await page.locator('section[aria-label="进入精选作品"]').waitFor();
+  await page.waitForTimeout(500);
+  const before=await page.evaluate(()=>scrollY);
+  await page.mouse.move(width/2,450);
+  await page.mouse.wheel(0,240);
+  await page.waitForTimeout(500);
+  const state=await page.evaluate(()=>({scrollY,overflow:document.documentElement.scrollWidth-innerWidth,heroPaused:document.querySelector('.heroMorphVideo')?.paused,backgroundVideos:document.querySelectorAll('[class*="narrative"] video').length}));
+  homepage.push({width,before,...state,nativeScroll:state.scrollY>before});
+  await page.screenshot({path:`${output}/home-${width}-reduced-motion.png`});
+  await context.close();
+}
+await writeFile(`${output}/homepage.json`,JSON.stringify(homepage,null,2));
 await browser.close();
+for(const entry of report){
+  assert.equal(entry.bounds.pageOverflow,0,`${entry.profile}: horizontal page overflow`);
+  assert.equal(entry.bounds.clipped,false,`${entry.profile}: record clipped by stage`);
+  assert.equal(entry.bounds.viewportClipped,false,`${entry.profile}: initial record outside viewport`);
+  assert.equal(entry.focus.horizontalOverflow,false,`${entry.profile}: expanded disc outside viewport`);
+  assert.equal(entry.focus.layerOverflow,0,`${entry.profile}: expanded contents overflow`);
+  assert(entry.selections.every(item=>item.fullyVisible),`${entry.profile}: selected record outside viewport`);
+  assert.equal(entry.scrollRestored,true,`${entry.profile}: page remains scroll locked`);
+  assert.deepEqual(entry.errors,[],`${entry.profile}: browser errors`);
+  if(entry.swipe){assert.equal(entry.swipe.selected,'1',`${entry.profile}: swipe does not select next record`);assert.equal(entry.swipe.accidentalDialog,false,`${entry.profile}: swipe opens dialog`)}
+}
+for(const entry of homepage){assert.equal(entry.overflow,0);assert.equal(entry.heroPaused,true);assert.equal(entry.backgroundVideos,0);assert.equal(entry.nativeScroll,true)}

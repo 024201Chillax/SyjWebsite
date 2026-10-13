@@ -445,6 +445,11 @@
  .primaryInfo{min-height:12.5rem}
 }
 
+@media(max-height:600px) and (min-width:768px){
+ .primaryInfo{padding:.75rem 0 .65rem}
+ .primaryInfo .infoKicker{margin-bottom:.5rem}
+}
+
 @media(prefers-reduced-motion:reduce){
  .info{animation:none}
  .cameraRig,.record,.discSurface,.discLabel,.focusClose{transition:none!important;will-change:auto}
