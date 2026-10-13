@@ -84,6 +84,8 @@ for (const profile of profiles) {
         assert.equal(counter,String(index+1).padStart(2,'0'),'Hover and counter disagree');
         await page.waitForTimeout(80);
         assert.equal(await page.locator(`[data-vinyl-index="${index}"]`).getAttribute('data-active'),'true','Stationary pointer changes project');
+        const painted=await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('[data-vinyl-index]')?.getAttribute('data-vinyl-index'),point);
+        assert.equal(painted,String(index),'Hovered position no longer belongs to selected disc');
         if(index===6){
           await page.mouse.click(point.x,point.y);
           const dialog=page.locator('section[id^="vinyl-focus-"]');
