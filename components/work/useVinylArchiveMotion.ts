@@ -27,6 +27,7 @@ export default function useVinylArchiveMotion(count:number,enabled=true){
  const enabledRef=useRef(enabled);
  const visibleRef=useRef(false);
  const pressedIndexRef=useRef<number|null>(null);
+ const hoverPointRef=useRef<{x:number;y:number}|null>(null);
  const dragRef=useRef<Drag>({active:false,pointerId:-1,x:0,y:0,target:0,moved:false,horizontal:false});
  const [activeIndex,setActiveIndex]=useState(0);
  const [reducedMotion,setReducedMotion]=useState(false);
@@ -144,13 +145,26 @@ export default function useVinylArchiveMotion(count:number,enabled=true){
  const onPointerDown=(event:ReactPointerEvent<HTMLDivElement>)=>{
   if(!enabledRef.current||!event.isPrimary||dragRef.current.active)return;
   pressedIndexRef.current=indexFromPoint(event.clientX,event.clientY);
+  if(event.pointerType==='mouse'&&!layoutRef.current.compact&&pressedIndexRef.current!==null)moveTo(pressedIndexRef.current,true);
   dragRef.current={active:true,pointerId:event.pointerId,x:event.clientX,y:event.clientY,target:targetRef.current,moved:false,horizontal:false};
  };
  const onPointerMove=(event:ReactPointerEvent<HTMLDivElement>)=>{
   if(!enabledRef.current||!event.isPrimary)return;
   const drag=dragRef.current;
   if(!drag.active){
-   if(event.pointerType==='mouse'&&!layoutRef.current.compact){tiltTargetRef.current=clamp(event.movementX/80,-.3,.3);ensureFrame()}
+   if(event.pointerType==='mouse'){
+    const previous=hoverPointRef.current;
+    if(previous?.x===event.clientX&&previous.y===event.clientY)return;
+    hoverPointRef.current={x:event.clientX,y:event.clientY};
+    const index=indexFromPoint(event.clientX,event.clientY);
+    if(!layoutRef.current.compact){
+     // Selection and preview share the actual painted circle hit, including overlap.
+     // Commit the selected project immediately; camera and tilt retain their easing.
+     if(index!==null&&index!==activeRef.current)moveTo(index,true);
+     tiltTargetRef.current=clamp(event.movementX/80,-.3,.3);ensureFrame();
+    }
+    return index;
+   }
    return;
   }
   if(drag.pointerId!==event.pointerId)return;
@@ -166,7 +180,7 @@ export default function useVinylArchiveMotion(count:number,enabled=true){
   if(drag.horizontal)moveTo(Math.round(targetRef.current));
   if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
  };
- const onPointerLeave=(_event?:ReactPointerEvent<HTMLDivElement>)=>{if(!dragRef.current.active){tiltTargetRef.current=0;ensureFrame()}};
+ const onPointerLeave=(_event?:ReactPointerEvent<HTMLDivElement>)=>{hoverPointRef.current=null;if(!dragRef.current.active){tiltTargetRef.current=0;ensureFrame()}};
  const focusIndex=useCallback((index:number)=>{moveTo(index,true);requestAnimationFrame(()=>recordsRef.current[index]?.focus({preventScroll:true}))},[moveTo]);
  const getRecordOrigin=useCallback((index:number)=>{
   const bounds=recordsRef.current[index]?.getBoundingClientRect();

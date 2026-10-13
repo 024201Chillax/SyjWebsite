@@ -43,6 +43,7 @@ for (const profile of profiles) {
   }));
   await page.screenshot({path: `${output}/${profile.name}-archive.png`});
   let hoverPreview=null;
+  const hoverBrowse=[];
   if(!profile.mobile){
     const player=page.locator('aside[class*="archivePlayer"]');
     await page.locator('[data-vinyl-index="0"]').hover();
@@ -55,6 +56,49 @@ for (const profile of profiles) {
     });
     assert.equal(hoverPreview.overlap,false,'Preview title overlaps its artwork');
     await page.screenshot({path:`${output}/${profile.name}-hover.png`});
+    for(const pose of [0,.85]){
+      await page.evaluate(pose=>{
+        const scene=document.querySelector('section[aria-label="全部设计作品档案"]');
+        const top=scrollY+scene.getBoundingClientRect().top;
+        window.scrollTo(0,top-72+pose*Math.max(0,scene.offsetHeight-(innerHeight-72)));
+      },pose);
+      await page.waitForTimeout(400);
+      for(const index of [0,1,2,3,4,5,6,5,4,3,2,1,0]){
+        const point=await page.evaluate(index=>{
+          const record=document.querySelector(`[data-vinyl-index="${index}"]`),r=record.getBoundingClientRect();
+          const hit=(x,y)=>document.elementFromPoint(x,y)?.closest('[data-vinyl-index]')===record;
+          const marker=record.querySelector('[class*="recordMarker"]')?.getBoundingClientRect();
+          if(marker){const x=marker.left+marker.width/2,y=marker.top+marker.height/2;if(hit(x,y))return {x,y}}
+          for(const row of [.5,.35,.65,.2,.8,.1,.9]){
+            const y=r.top+r.height*row;
+            if(y<73||y>innerHeight-1)continue;
+            for(let x=Math.max(1,r.left);x<Math.min(innerWidth-1,r.right);x+=2)if(hit(x,y))return {x,y};
+          }
+          return null;
+        },index);
+        assert(point,`${profile.name}: disc ${index+1} has no visible hover region`);
+        await page.mouse.move(point.x,point.y);
+        await page.waitForFunction(index=>document.querySelector(`[data-vinyl-index="${index}"]`)?.getAttribute('data-active')==='true',index);
+        await page.waitForFunction(index=>document.querySelector('aside[class*="archivePlayer"] header b')?.textContent===String(index+1).padStart(3,'0'),index);
+        const counter=await page.locator('[class*="archiveCounter"] b').textContent();
+        assert.equal(counter,String(index+1).padStart(2,'0'),'Hover and counter disagree');
+        await page.waitForTimeout(80);
+        assert.equal(await page.locator(`[data-vinyl-index="${index}"]`).getAttribute('data-active'),'true','Stationary pointer changes project');
+        if(index===6){
+          await page.mouse.click(point.x,point.y);
+          const dialog=page.locator('section[id^="vinyl-focus-"]');
+          await dialog.waitFor();
+          assert.equal(await dialog.locator('[class*="focusTopLeft"] strong').textContent(),'007','Click opens a different hovered disc');
+          await page.keyboard.press('Escape');await dialog.waitFor({state:'detached'});
+        }
+        hoverBrowse.push({pose,index,matched:true});
+      }
+    }
+    await page.evaluate(()=>{
+      const scene=document.querySelector('section[aria-label="全部设计作品档案"]');
+      window.scrollTo(0,scrollY+scene.getBoundingClientRect().top-72);
+    });
+    await page.waitForTimeout(400);
     await player.hover();
     await page.waitForTimeout(350);
     assert.equal(await player.getAttribute('data-visible'),'true','Preview closes while hovering its panel');
@@ -120,7 +164,7 @@ for (const profile of profiles) {
       swipe=await page.evaluate(()=>({selected:document.querySelector('[data-vinyl-index][data-active="true"]')?.getAttribute('data-vinyl-index'),accidentalDialog:!!document.querySelector('section[id^="vinyl-focus-"]')}));
     }
   }
-  report.push({profile: profile.name, bounds, timing, focus: focusBounds, closeMs, selections,swipe,scrollRestored,hoverPreview,errors});
+  report.push({profile: profile.name, bounds, timing, focus: focusBounds, closeMs, selections,swipe,scrollRestored,hoverPreview,hoverBrowse,errors});
   await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
   await context.close();
 }

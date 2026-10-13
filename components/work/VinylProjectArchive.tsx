@@ -94,11 +94,10 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
     }}
     {...motion.handlers}
     onPointerMove={event=>{
-     motion.handlers.onPointerMove(event);
+     const index=motion.handlers.onPointerMove(event);
      if(event.pointerType!=='mouse'||!event.isPrimary)return;
-     const index=motion.indexFromPoint(event.clientX,event.clientY);
      if(index===null)sleeve.scheduleClose();
-     else sleeve.preview(index);
+     else if(index!==undefined)sleeve.preview(index);
     }}
     onPointerLeave={event=>{
      motion.handlers.onPointerLeave(event);
@@ -129,7 +128,7 @@ export default function VinylProjectArchive({locale,artwork}:{locale:Locale;artw
 
   <div className={styles.archiveFooter} aria-label={locale==='zh'?'浏览全部作品':'Browse every project'}>
    <div className={styles.archiveCounter} aria-live="polite"><b>{String(motion.activeIndex+1).padStart(2,'0')}</b><span>/ {String(projects.length).padStart(2,'0')}</span></div>
-   <span>{locale==='zh'?'左右滑动浏览，点击光碟展开':'Browse with arrows or swipe; select a disc to open'}</span>
+   <span>{locale==='zh'?'移动鼠标翻阅，点击光碟展开':'Move the pointer to browse; select a disc to open'}</span>
    <div className={styles.archiveControls}>
     <button type="button" disabled={motion.activeIndex===0} aria-label={locale==='zh'?'上一个作品':'Previous project'} onClick={event=>motion.moveTo(motion.activeIndex-1,event.detail===0)}>←</button>
     <button type="button" disabled={motion.activeIndex===projects.length-1} aria-label={locale==='zh'?'下一个作品':'Next project'} onClick={event=>motion.moveTo(motion.activeIndex+1,event.detail===0)}>→</button>
