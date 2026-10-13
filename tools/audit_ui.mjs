@@ -88,8 +88,15 @@ for (const profile of profiles) {
         }
         assert(point,`${profile.name}: disc ${index+1} has no visible hover region`);
         await page.mouse.move(point.x,point.y);
-        await page.waitForFunction(index=>document.querySelector(`[data-vinyl-index="${index}"]`)?.getAttribute('data-active')==='true',index);
-        await page.waitForFunction(index=>document.querySelector('aside[class*="archivePlayer"] header b')?.textContent===String(index+1).padStart(3,'0'),index);
+        try{
+          await page.waitForFunction(index=>document.querySelector(`[data-vinyl-index="${index}"]`)?.getAttribute('data-active')==='true',index,{timeout:2000});
+          await page.waitForFunction(index=>document.querySelector('aside[class*="archivePlayer"] header b')?.textContent===String(index+1).padStart(3,'0'),index,{timeout:2000});
+        }catch(error){
+          await page.screenshot({path:`${output}/${profile.name}-sync-failure.png`});
+          const state=await page.evaluate(()=>({active:document.querySelector('[data-vinyl-index][data-active="true"]')?.getAttribute('data-vinyl-index'),focused:document.activeElement?.getAttribute('data-vinyl-index'),preview:document.querySelector('aside[class*="archivePlayer"]')?.outerHTML.slice(0,400),number:document.querySelector('aside[class*="archivePlayer"] header b')?.textContent}));
+          await writeFile(`${output}/sync-failure.json`,JSON.stringify({profile:profile.name,pose,index,point,state},null,2));
+          throw error;
+        }
         const counter=await page.locator('[class*="archiveCounter"] b').textContent();
         assert.equal(counter,String(index+1).padStart(2,'0'),'Hover and counter disagree');
         await page.waitForTimeout(80);

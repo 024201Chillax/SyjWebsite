@@ -55,9 +55,6 @@ export default function VinylRecord({project,artwork,index,active,expanded,local
    }
   }}
   onBlur={onPreviewLeave}
-  onPointerLeave={event=>{
-   if(event.pointerType==='mouse')onPreviewLeave();
-  }}
   onClick={event=>{
    if(!active){
     onFocus(index);

@@ -180,7 +180,9 @@ export default function useVinylArchiveMotion(count:number,enabled=true){
   if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
  };
  const onPointerLeave=(_event?:ReactPointerEvent<HTMLDivElement>)=>{hoverPointRef.current=null;if(!dragRef.current.active){tiltTargetRef.current=0;ensureFrame()}};
- const focusIndex=useCallback((index:number)=>{moveTo(index,true);requestAnimationFrame(()=>recordsRef.current[index]?.focus({preventScroll:true}))},[moveTo]);
+ const focusIndex=useCallback((index:number)=>{moveTo(index,true);requestAnimationFrame(()=>{
+  if(enabledRef.current&&activeRef.current===index)recordsRef.current[index]?.focus({preventScroll:true});
+ })},[moveTo]);
  const getRecordOrigin=useCallback((index:number)=>{
   const bounds=recordsRef.current[index]?.getBoundingClientRect();
   return bounds?{x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2,size:bounds.width}:undefined;
