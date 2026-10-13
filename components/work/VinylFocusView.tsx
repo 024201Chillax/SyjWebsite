@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
+import {useEffect,useLayoutEffect,useRef,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {Locale,Project} from '@/lib/types';
 import type {VinylArtwork} from '@/lib/vinylArtwork';
@@ -27,7 +27,6 @@ export default function VinylFocusView({project,artwork,locale,closing,origin,on
  const snapshotRef=useRef<{transform:string;opacity:string}|null>(null);
  const dismissRef=useRef(onDismiss);
  const exitedRef=useRef(onExited);
- const [back,setBack]=useState(false);
  dismissRef.current=onDismiss;
  exitedRef.current=onExited;
  const titleId=`vinyl-focus-title-${project.slug}`;
@@ -100,7 +99,7 @@ export default function VinylFocusView({project,artwork,locale,closing,origin,on
   </div>
 
   <div ref={sceneRef} className={styles.focusDiscScene} onPointerDown={stop} aria-hidden="true">
-   <div className={styles.focusDisc} data-face={back?'back':'front'}>
+   <div className={styles.focusDisc}>
     <div className={`${styles.focusDiscFace} ${styles.focusDiscFront}`}>
      <span className={styles.focusDiscSheen}/>
      {artwork.discArtwork&&<Image className={styles.focusArtwork} src={artwork.discArtwork} alt="" fill sizes="(max-width: 767px) 84vw, 42vw"/>}
@@ -121,8 +120,6 @@ export default function VinylFocusView({project,artwork,locale,closing,origin,on
     </div>
    </div>
   </div>
-
-  <button className={styles.focusFlip} type="button" aria-pressed={back} onClick={()=>setBack(value=>!value)} onPointerDown={stop}>{locale==='zh'?(back?'查看正面':'查看背面'):(back?'VIEW FRONT':'VIEW BACK')}</button>
 
   <div className={`${styles.focusInfo} ${styles.focusBottomLeft}`} onPointerDown={stop}>
    <small>{locale==='zh'?'项目名称':'PROJECT TITLE'}</small>
