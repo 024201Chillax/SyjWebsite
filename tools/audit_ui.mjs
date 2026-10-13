@@ -76,6 +76,16 @@ for (const profile of profiles) {
           }
           return null;
         },index);
+        if(!point){
+          await page.screenshot({path:`${output}/${profile.name}-hit-failure.png`});
+          const diagnosis=await page.evaluate(()=>Array.from(document.querySelectorAll('[data-vinyl-index]')).map(record=>{
+            const r=record.getBoundingClientRect(),m=record.querySelector('[class*="recordMarker"]').getBoundingClientRect();
+            const x=m.left+m.width/2,y=m.top+m.height/2,hit=document.elementFromPoint(x,y);
+            return {index:record.getAttribute('data-vinyl-index'),rect:r.toJSON(),marker:m.toJSON(),transform:record.style.transform,visibility:getComputedStyle(record).visibility,pointer:getComputedStyle(record).pointerEvents,hit:hit?.className,hitIndex:hit?.closest('[data-vinyl-index]')?.getAttribute('data-vinyl-index')};
+          }));
+          await writeFile(`${output}/hit-failure.json`,JSON.stringify({profile:profile.name,pose,index,diagnosis},null,2));
+          console.log(JSON.stringify({hoverHitFailure:{profile:profile.name,pose,index,diagnosis}}));
+        }
         assert(point,`${profile.name}: disc ${index+1} has no visible hover region`);
         await page.mouse.move(point.x,point.y);
         await page.waitForFunction(index=>document.querySelector(`[data-vinyl-index="${index}"]`)?.getAttribute('data-active')==='true',index);
