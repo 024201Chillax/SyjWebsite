@@ -42,11 +42,11 @@ for (const profile of profiles) {
   }));
   await page.screenshot({path: `${output}/${profile.name}-archive.png`});
   await page.locator('[data-vinyl-index="0"]').press('Enter');
-  const focus = page.locator('[id^="vinyl-focus-"]');
+  const focus = page.locator('section[id^="vinyl-focus-"]');
   await focus.waitFor();
   await page.waitForTimeout(700);
   const focusBounds = await page.evaluate(() => {
-    const layer = document.querySelector('[id^="vinyl-focus-"]');
+    const layer = document.querySelector('section[id^="vinyl-focus-"]');
     const disc = layer?.querySelector('[class*="focusDiscScene"]');
     const r = disc?.getBoundingClientRect();
     return {disc: r?.toJSON(), horizontalOverflow: !!r && (r.left < -1 || r.right > innerWidth + 1), layerOverflow: layer ? layer.scrollWidth - layer.clientWidth : null};
@@ -56,6 +56,7 @@ for (const profile of profiles) {
   await page.keyboard.press('Escape');
   await focus.waitFor({state: 'detached', timeout: 4000});
   report.push({profile: profile.name, bounds, timing, focus: focusBounds, closeMs: Date.now() - closeStart, errors});
+  await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
   await context.close();
 }
 await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
