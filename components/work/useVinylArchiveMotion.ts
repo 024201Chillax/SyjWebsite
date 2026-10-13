@@ -53,12 +53,11 @@ export default function useVinylArchiveMotion(count:number,enabled=true){
    const stepY=Math.min(diameter*.08,Math.max(0,height-diameter-56)/Math.max(1,count-1));
    const x=compact?distance*diameter*.88:mix(index*diameter*.018,axis*stepX,corridor);
    const y=compact?0:mix(-index*diameter*.009,-axis*stepY,corridor);
-   const z=compact?0:(count-index)*2+focus*(count*2+2);
    const angle=compact?0:mix(index*.65,-axis*.25,corridor)+tiltRef.current*.65;
    const scale=compact?1:1+focus*.015*corridor;
    const opacity=compact?clamp(1-Math.max(0,abs-.5)*.65,0,1):1;
    // Only compositor properties change during motion. Dimensions are cached on resize.
-   record.style.transform=`translate(-50%,-50%) translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,${z.toFixed(2)}px) rotateZ(${angle.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
+   record.style.transform=`translate(-50%,-50%) translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0) rotateZ(${angle.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
    record.style.opacity=opacity.toFixed(3);
    record.style.visibility=compact&&abs>1.7?'hidden':'visible';
    record.style.pointerEvents=compact&&abs>1.7?'none':'auto';

@@ -154,7 +154,7 @@
  will-change:transform;
 }
 .recordStack{position:absolute;inset:0;overflow:visible;transform-style:preserve-3d}
-.cameraRig,.recordStack{pointer-events:none}
+.cameraRig,.recordStack{pointer-events:none;transform-style:flat}
 
 .record{
  --vinyl-x:0px;
@@ -190,6 +190,7 @@
 }
 
 .record:not([data-active="true"]){cursor:alias}
+.record{transform-style:flat}
 .record:before{content:"";position:absolute;z-index:-1;inset:.45%;border:7px solid #050505;border-radius:50%;background:#090909;box-shadow:0 0 0 1px #3a3a3a;transform:translateZ(-8px);pointer-events:none}
 .record:focus-visible{outline:none}
 .record:focus-visible .discSurface{box-shadow:0 0 0 3px var(--archive-paper),0 0 0 5px #111,0 2.2rem 4rem rgba(0,0,0,var(--vinyl-shadow))}
