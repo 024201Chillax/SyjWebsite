@@ -8,7 +8,10 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "check:github": "node tools/check_github_ready.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "build:cloudflare": "opennextjs-cloudflare build",
+    "deploy:cloudflare": "opennextjs-cloudflare deploy",
+    "test:cloudflare": "node --test cloudflare/media.test.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -21,11 +24,13 @@
     "zod": "4.1.11"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.10",
     "@types/node": "24.5.2",
     "@types/react": "19.1.16",
     "@types/react-dom": "19.1.9",
     "@types/three": "^0.186.0",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "wrangler": "^4.149.0"
   },
   "packageManager": "pnpm@11.19.0"
 }

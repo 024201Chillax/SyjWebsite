@@ -11,7 +11,7 @@ const selectedCover:Record<string,string>={
  'nine-sons':'/portfolio/selected/cover-nine-sons.png',
  'type-encounter':'/portfolio/selected/cover-type-encounter.png',
  'oracle-code':'/portfolio/oracle-code/cover.png',
- 'gotz-workshop':'/portfolio/selected/cover-gotz-workshop.png',
+ 'gotz-workshop':'/portfolio/selected/cover-gotz-workshop.webp',
  safe:'/portfolio/selected/cover-safe.png'
 };
 

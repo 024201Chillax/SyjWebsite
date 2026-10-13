@@ -1,0 +1,35 @@
+name: Build Cloudflare portfolio
+
+on:
+  push:
+    branches: [codex/cloudflare-deployment]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test:cloudflare
+      - run: pnpm build:cloudflare
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      - run: pnpm exec wrangler deploy --dry-run --outdir cloudflare-build
+      - run: tar -czf cloudflare-site.tar.gz cloudflare-build .open-next/assets wrangler.jsonc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-site
+          path: cloudflare-site.tar.gz
+          retention-days: 3

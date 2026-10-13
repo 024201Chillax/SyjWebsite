@@ -20,6 +20,10 @@ __pycache__/
 .DS_Store
 Thumbs.db
 Desktop.ini
+.open-next/
+.wrangler/
+.dev.vars*
+cloudflare-build/
 
 # Original oversized video; the site uses motion-web.mp4
 /public/playground/maxxxine/motion.mp4
