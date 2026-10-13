@@ -122,6 +122,8 @@
 .playerTopBar>b{font-size:.58rem;font-weight:600;letter-spacing:.16em}
 .playerStatus{display:flex;align-items:center;gap:.48rem}.playerStatus i{width:.31rem;height:.31rem;border-radius:50%;background:var(--player-control)}
 .playerContent{min-height:0;display:grid;grid-template-rows:auto auto auto auto auto auto minmax(0,1fr);align-content:start;gap:clamp(.48rem,.78svh,.72rem);padding:clamp(.9rem,1.3vw,1.25rem);overflow:hidden}
+.playerContent{display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#777670 transparent}
+.playerContent>*{flex-shrink:0}
 .playerEyebrow{color:var(--player-muted);font:560 .43rem var(--font-mono),monospace;letter-spacing:.14em;text-transform:uppercase;animation:playerDetailIn .34s .04s cubic-bezier(.22,1,.36,1) both}
 .playerArtwork{position:relative;width:min(100%,36svh);max-height:22.5rem;aspect-ratio:1;justify-self:center;margin:0;overflow:hidden;border:1px solid rgba(17,17,15,.08);border-radius:7px;background:#d8d7d1;box-shadow:0 10px 28px rgba(20,20,18,.1);clip-path:inset(0);animation:playerArtworkReveal .54s .05s cubic-bezier(.22,1,.36,1) both}
 .playerImage{object-fit:cover;object-position:center}.playerArtwork[data-fit="contain"] .playerImage{object-fit:contain}

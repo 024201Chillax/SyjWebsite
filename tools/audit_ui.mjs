@@ -48,7 +48,12 @@ for (const profile of profiles) {
     await page.locator('[data-vinyl-index="0"]').hover();
     await page.waitForFunction(()=>document.querySelector('aside[class*="archivePlayer"]')?.getAttribute('data-visible')==='true');
     await page.waitForTimeout(700);
-    hoverPreview=await player.evaluate(element=>({visible:element.getAttribute('data-visible')==='true',title:element.querySelector('h3')?.textContent}));
+    hoverPreview=await player.evaluate(element=>{
+      const image=element.querySelector('figure')?.getBoundingClientRect(),title=element.querySelector('h3')?.getBoundingClientRect();
+      const content=element.querySelector('[class*="playerContent"]');
+      return {visible:element.getAttribute('data-visible')==='true',title:element.querySelector('h3')?.textContent,overlap:!!image&&!!title&&title.top<image.bottom-1,scrollable:!!content&&content.scrollHeight>content.clientHeight};
+    });
+    assert.equal(hoverPreview.overlap,false,'Preview title overlaps its artwork');
     await page.screenshot({path:`${output}/${profile.name}-hover.png`});
     await player.hover();
     await page.waitForTimeout(350);
