@@ -20,7 +20,16 @@ for(const {width,height} of [{width:320,height:568},{width:390,height:844},{widt
  await client.send('Emulation.setCPUThrottlingRate',{rate:mobile?4:2});
  await client.send('Network.enable');
  await client.send('Network.emulateNetworkConditions',{offline:false,latency:60,downloadThroughput:1250000,uploadThroughput:1250000});
- await page.goto(`${process.env.UI_BASE_URL||'http://127.0.0.1:3000'}/zh#work`,{waitUntil:'networkidle'});
+ await page.goto(`${process.env.UI_BASE_URL||'http://127.0.0.1:3000'}/zh#work`,{waitUntil:'domcontentloaded'});
+ await page.locator('section[aria-label="进入精选作品"]').waitFor();
+ await page.waitForFunction(()=>{
+  const poster=document.querySelector('[data-camera-poster]');
+  return poster instanceof HTMLImageElement&&poster.complete&&poster.naturalWidth>0;
+ });
+ await page.evaluate(async()=>{
+  await document.fonts.ready;
+  await document.querySelector('[data-camera-poster]').decode();
+ });
  for(const [name,label] of [['selected','进入精选作品'],['restricted','从作品档案进入实验场']]){
   const result=await page.evaluate(async label=>{
    document.documentElement.style.scrollBehavior='auto';
