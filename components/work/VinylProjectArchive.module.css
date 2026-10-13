@@ -154,6 +154,7 @@
  will-change:transform;
 }
 .recordStack{position:absolute;inset:0;overflow:visible;transform-style:preserve-3d}
+.cameraRig,.recordStack{pointer-events:none}
 
 .record{
  --vinyl-x:0px;
