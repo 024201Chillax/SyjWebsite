@@ -1,0 +1,31 @@
+name: Responsive UI audit
+on:
+  push:
+    branches: [main]
+    paths: ['components/**', 'app/**', 'lib/**', 'tools/audit_ui.mjs', '.github/workflows/ui-audit.yml', 'package.json', 'pnpm-lock.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: pnpm}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      - name: Inspect desktop and mobile together
+        run: |
+          pnpm start --hostname 127.0.0.1 > /tmp/portfolio-server.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/zh/work > /dev/null && break; sleep 1; done
+          node tools/audit_ui.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-audit
+          path: ui-audit/
+          retention-days: 3
