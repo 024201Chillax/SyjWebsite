@@ -135,4 +135,7 @@
 @media(min-width:768px) and (max-width:1023px) and (min-height:601px){
  .renderedModel{inset:20rem 2vw 9vh}
 }
+@media(max-width:767px) and (max-height:600px){
+ .renderedModel{inset:8rem 3vw 2rem}
+}
 @media(prefers-reduced-motion:reduce){.sideLabel{transition:none}.cameraPoster{will-change:auto}}
