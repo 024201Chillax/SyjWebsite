@@ -132,4 +132,7 @@
  .sideLabel strong{font-size:1.35rem}
  .chapterRail{bottom:.8rem}
 }
+@media(min-width:768px) and (max-width:1023px) and (min-height:601px){
+ .renderedModel{inset:20rem 2vw 9vh}
+}
 @media(prefers-reduced-motion:reduce){.sideLabel{transition:none}.cameraPoster{will-change:auto}}

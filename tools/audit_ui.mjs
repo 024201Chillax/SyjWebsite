@@ -45,6 +45,9 @@ for (const profile of profiles) {
   await page.locator('[data-vinyl-index="0"]').press('Enter');
   const focus = page.locator('section[id^="vinyl-focus-"]');
   await focus.waitFor();
+  assert.equal(await focus.getByRole('button',{name:/查看正面|查看背面/}).count(),0,'Manual flip control remains');
+  const flip=await focus.locator('[class*="focusDiscScene"] > div').evaluate(element=>getComputedStyle(element).animationName);
+  assert.notEqual(flip,'none','Automatic disc flip is missing');
   await page.waitForTimeout(700);
   const focusBounds = await page.evaluate(() => {
     const layer = document.querySelector('section[id^="vinyl-focus-"]');

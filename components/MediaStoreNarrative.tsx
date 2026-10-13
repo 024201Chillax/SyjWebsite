@@ -50,9 +50,11 @@ export default function MediaStoreNarrative({locale,work,playground}:Props){
    targetProgress=p;
    targetScale=media.matches?1:1+(maxScale-1)*zoom;
    // A single decoded texture stays on the compositor. No frame fetching or canvas paints.
-   targetX=media.matches?0:(sequence==='selected'?.20:-.225)*fitWidth*targetScale*zoom;
-   targetOpacity=1-range(p,.82,1);
-   const nextLabel=p>.12&&p<.82?sequence:null;
+   const sideComposition=window.innerWidth>=1024||window.innerHeight<=600?width*.06:0;
+   targetX=media.matches?0:(sequence==='selected'?1:-1)*(fitWidth*.2023*targetScale+sideComposition)*zoom;
+   targetOpacity=1-range(p,.86,1);
+   const labelStart=window.innerWidth<=767&&window.innerHeight>600?.12:.69;
+   const nextLabel=p>labelStart&&p<.88?sequence:null;
    if(nextLabel!==label){label=nextLabel;setEntry(label)}
    if(!shown){shown=true;setVisible(true)}
   };
